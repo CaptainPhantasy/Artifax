@@ -4,6 +4,8 @@
 
 The repo root is not a buildable project — it is a payload: manifest, skill instructions, helper scripts, and a site starter template. Build/test commands apply to generated sites created from the starter.
 
+On top of the as-received wrapper this repo adds a **craft pipeline**: `sites-intake` (spec + ambiguity), `sites-design` (W3C DTCG tokens + accessible primitives + patterns), `sites-craft` (motion + PWA + modern web), `sites-critique` (rubric + vision pass), and `sites-quality` (Lighthouse/axe gates). `sites-building` orchestrates them; `sites-hosting` ships the result.
+
 ## Commands
 
 Platform tooling (bash, no install step):
@@ -11,7 +13,12 @@ Platform tooling (bash, no install step):
 ```bash
 scripts/init-site.sh TARGET_DIR   # scaffold starter into EMPTY dir; refuses non-empty (exit 2)
 scripts/package-site.sh PROJECT_DIR ARCHIVE  # validate + stage dist/, .sites/hosting.json, drizzle/ → .tar.gz
+scripts/compile-tokens.sh         # regenerate styles/tokens.css from the DTCG source
+scripts/critique.sh PROJECT_DIR [URL]  # screenshot desktop+mobile x light+dark into .sites/critique/
+scripts/quality-gate.sh PROJECT_DIR    # static gate; live audits when SITES_AUDIT_URL is set
 ```
+
+- `QUALITY_GATE=1 scripts/package-site.sh …` runs the quality gate and aborts on blocking failures before packaging.
 
 - Root scripts are shims that exec into `skills/*/scripts/` — edit the `skills/` copies.
 - `init-site.sh` target defaults to `$SITES_WORKSPACE`, then `$PWD`. Install is lockfile-aware: `npm ci` when `package-lock.json` exists, else `npm install` (both with `--ignore-scripts`).
@@ -33,6 +40,11 @@ Publishing is pluggable (see Hosting in `README.md`). Default deliverable: valid
 ## Structure
 
 - `plugin.json` — manifest (name `sites`, points at `./skills/`)
+- `skills/sites-intake/` — `SKILL.md`, `references/` (intake-protocol, ambiguity-scoring)
+- `skills/sites-design/` — `SKILL.md`, `references/` (design-system, component-catalog, patterns-library, resources), `assets/tokens/{tokens.json,tokens.css}`, `scripts/compile-tokens.mjs`
+- `skills/sites-craft/` — `SKILL.md`, `references/` (motion, pwa, modern-web)
+- `skills/sites-critique/` — `SKILL.md`, `references/` (rubric, vision-loop), `scripts/critique.mjs`
+- `skills/sites-quality/` — `SKILL.md`, `references/gates.md`, `scripts/quality-gate.mjs`
 - `skills/sites-building/` — `SKILL.md`, `scripts/init-site.sh`, `references/` (authentication, persistence-and-storage), `templates/vinext-starter/`
 - `skills/sites-hosting/` — `SKILL.md` (plug contract + hand-off), `scripts/package-site.sh`
 - `connectors/openai/` — OpenAI Sites plug as received (manifest, app id, README with call sequence)
@@ -40,6 +52,8 @@ Publishing is pluggable (see Hosting in `README.md`). Default deliverable: valid
 - `README.md`, `LICENSE` (MIT)
 
 Starter stack: Next.js-style `app/` dir on **vinext** (Vite + Cloudflare Workers ESM), React 19, Tailwind 4, Drizzle + D1, wrangler 4, TypeScript, ESLint 9 flat config.
+
+The starter also ships the design substrate: `styles/tokens.css` (generated) + `styles/motion.css`, `lib/cn.ts`, and `components/ui/*` (Button, Card, Badge, Alert, Skeleton, Field/Input/Textarea, Dialog, Tabs, Accordion) — accessible, zero-dependency, token-styled. `app/globals.css` maps tokens into Tailwind (`bg-surface`, `text-ink`, `border-line`, `bg-brand`, `ring-focus`, `shadow-*`, `ease-*`, `animate-*`).
 
 ## Conventions
 
@@ -50,6 +64,9 @@ Starter stack: Next.js-style `app/` dir on **vinext** (Vite + Cloudflare Workers
 - D1 access via `getDb()` in `db/index.ts`; schema in `db/schema.ts`; migrations in `drizzle/`. One statement per `prepare()`; use `batch([...])` for multiples; never `env.DB.exec()` for multiline SQL.
 - The `sites()` Vite plugin (`build/sites-vite-plugin.ts`) copies `.sites/hosting.json` + `drizzle/` into `dist/.sites/` on build.
 - Hosting plugs follow a fixed contract (register → persist `project_id` → deploy exact source → one plain result; private first, shared/public requires explicit approval). Identity is plug-injected headers; `app/chatgpt-auth.ts` implements the OpenAI plug's headers as the reference pattern.
+- **Tokens are the only source of values.** Site code uses token-backed Tailwind utilities or `var(--…)`; no raw hex/rgb and no arbitrary pixel spacing. Edit `tokens.json` and run `scripts/compile-tokens.sh` — never hand-edit `tokens.css`. `init-site.sh` re-copies the compiled tokens into generated sites so the system stays current.
+- **Components come from `components/ui/`** (or Radix/React Aria/Ark for more); every interactive element satisfies the a11y contract in `skills/sites-design/references/component-catalog.md`.
+- The quality gate (`skills/sites-quality/scripts/quality-gate.mjs`) is advisory by default; `QUALITY_GATE=1` makes blocking accessibility failures fatal. It never suppresses a finding.
 - Shell scripts: `set -euo pipefail`, validate inputs, exit non-zero with stderr messages.
 
 ## Testing

@@ -15,9 +15,11 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Starter Project",
   description: "A clean starting point for building your site.",
+  manifest: "/manifest.webmanifest",
   icons: {
     icon: "/favicon.svg",
     shortcut: "/favicon.svg",
+    apple: "/favicon.svg",
   },
 };
 

@@ -1,13 +1,15 @@
 {
   "name": "sites",
-  "version": "1.0.0-open.1",
-  "description": "Agent-agnostic website building and hosting. Build, validate, package, serve, and hand off full-stack sites from any machine, through any agent.",
+  "version": "1.1.0-open",
+  "description": "Agent-agnostic website building and hosting, with a frontier-grade design and quality pipeline: intake specification, design tokens, accessible components, motion and PWA craft, rubric critique, and objective quality gates. Build, validate, package, serve, and hand off full-stack sites from any machine, through any agent.",
   "license": "MIT",
   "keywords": [
     "build",
     "deploy",
     "sites",
     "website",
+    "web app",
+    "pwa",
     "landing page",
     "portfolio",
     "dashboard",
@@ -15,22 +17,28 @@
     "tracker",
     "hub",
     "internal tool",
-    "games"
+    "games",
+    "design system",
+    "design tokens",
+    "accessibility",
+    "wcag",
+    "figma alternative",
+    "html artifact"
   ],
   "skills": "./skills/",
   "interface": {
     "displayName": "Sites",
-    "shortDescription": "Build and host websites with any agent",
-    "longDescription": "Build, validate, package, serve, and hand off websites — landing pages, portfolios, dashboards, portals, trackers, hubs, games, and internal tools — with any agent, on any machine. The engine is fully open source (vinext, Vite, Drizzle, Tailwind, wrangler); hosting is pluggable, so finished sites go wherever their human wants them.",
+    "shortDescription": "Design and build beautiful sites with any agent",
+    "longDescription": "Build, design, validate, package, serve, and hand off websites — landing pages, portfolios, dashboards, portals, trackers, hubs, games, PWAs, and internal tools — with any agent, on any machine. Ships a complete craft pipeline: an intake spec that resolves ambiguity before building, a design-token system (W3C DTCG) with accessible React primitives, motion and PWA capability, a rubric-driven critique loop with a vision pass, and objective quality gates (Lighthouse, axe-core). The engine is fully open source (vinext, Vite, Drizzle, Tailwind, wrangler); hosting is pluggable, so finished sites go wherever their human wants them.",
     "category": "Productivity",
     "capabilities": [
       "Interactive",
       "Write"
     ],
     "defaultPrompt": [
-      "Build a new-hire portal for my company",
-      "Create a daily sudoku game with a leaderboard",
-      "Build a dashboard to track customer support trends"
+      "Build a beautiful landing page for my product with a real design system",
+      "Create a daily sudoku game with a leaderboard that installs as an app",
+      "Build an accessible dashboard to track customer support trends"
     ],
     "logo": "./assets/logo.svg",
     "composerIcon": "./assets/icon.svg",

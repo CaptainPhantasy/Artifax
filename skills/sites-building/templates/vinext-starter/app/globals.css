@@ -1,26 +1,115 @@
 @import "tailwindcss";
+@import "../styles/tokens.css";
+@import "../styles/motion.css";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
+/* Map design tokens into Tailwind's theme so utilities are on-system:
+ * bg-canvas, bg-surface, text-ink, border-line, bg-brand, ring-focus, etc. */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  /* surfaces & text */
+  --color-canvas:       var(--bg);
+  --color-surface:      var(--surface);
+  --color-surface-2:    var(--surface-2);
+  --color-surface-3:    var(--surface-3);
+  --color-ink:          var(--ink);
+  --color-ink-2:        var(--ink-2);
+  --color-ink-3:        var(--ink-3);
+  --color-line:         var(--line);
+  --color-line-2:       var(--line-2);
+
+  /* brand */
+  --color-brand:        var(--brand);
+  --color-brand-hover:  var(--brand-hover);
+  --color-brand-subtle: var(--brand-subtle);
+  --color-on-brand:     var(--on-brand);
+
+  /* status */
+  --color-success:      var(--success);
+  --color-success-bg:   var(--success-bg);
+  --color-warning:      var(--warning);
+  --color-warning-bg:   var(--warning-bg);
+  --color-danger:       var(--danger);
+  --color-danger-bg:    var(--danger-bg);
+  --color-info:         var(--info);
+  --color-info-bg:      var(--info-bg);
+
+  /* focus ring */
+  --color-focus:        var(--ring);
+
+  /* typography */
+  --font-sans:          var(--ff-sans);
+  --font-mono:          var(--ff-mono);
+  --font-display:       var(--ff-display);
+
+  /* radius */
+  --radius-xs:  var(--rd-xs);
+  --radius-sm:  var(--rd-sm);
+  --radius-md:  var(--rd-md);
+  --radius-lg:  var(--rd-lg);
+  --radius-xl:  var(--rd-xl);
+  --radius-2xl: var(--rd-2xl);
+
+  /* elevation */
+  --shadow-xs:    var(--sh-xs);
+  --shadow-sm:    var(--sh-sm);
+  --shadow-md:    var(--sh-md);
+  --shadow-lg:    var(--sh-lg);
+  --shadow-xl:    var(--sh-xl);
+  --shadow-inner: var(--sh-inner);
+
+  /* easing */
+  --ease-standard:   var(--curve-standard);
+  --ease-decelerate: var(--curve-decelerate);
+  --ease-accelerate: var(--curve-accelerate);
+  --ease-emphasized: var(--curve-emphasized);
+
+  /* animations (animate-fade-in, animate-rise, animate-scale-in, animate-shimmer) */
+  --animate-fade-in:  ds-fade-in  var(--dur-base) var(--curve-decelerate) both;
+  --animate-rise:     ds-rise     var(--dur-base) var(--curve-decelerate) both;
+  --animate-scale-in: ds-scale-in var(--dur-fast) var(--curve-decelerate) both;
+  --animate-shimmer:  ds-shimmer  1.6s linear infinite;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
   }
-}
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--ff-sans);
+    font-size: var(--fs-base);
+    line-height: var(--lh-normal);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1, h2, h3, h4 {
+    color: var(--ink);
+    font-weight: var(--fw-semibold);
+    letter-spacing: var(--ls-tight);
+    line-height: var(--lh-tight);
+    text-wrap: balance;
+  }
+
+  p { text-wrap: pretty; }
+
+  a { color: var(--brand); text-underline-offset: 3px; }
+
+  ::selection {
+    background: var(--brand-subtle);
+    color: var(--ink);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+    border-radius: var(--rd-xs);
+  }
+
+  /* Honor reduced motion at the platform level as well. */
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+  }
 }

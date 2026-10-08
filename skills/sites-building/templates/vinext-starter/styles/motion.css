@@ -1,0 +1,84 @@
+/* Sites motion kit — keyframes, entrance utilities, view transitions.
+ * Durations/curves come from tokens.css. See skills/sites-craft/references/motion.md.
+ * Every animation is neutralized under prefers-reduced-motion (bottom of file). */
+
+@keyframes ds-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes ds-rise {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes ds-scale-in {
+  from { opacity: 0; transform: scale(0.96); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes ds-slide-in-right {
+  from { opacity: 0; transform: translateX(12px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes ds-shimmer {
+  from { background-position: -200% 0; }
+  to   { background-position: 200% 0; }
+}
+
+/* Entrance utilities — apply once on first paint. */
+.ds-enter        { animation: ds-fade-in  var(--dur-base) var(--curve-decelerate) both; }
+.ds-enter-rise   { animation: ds-rise     var(--dur-base) var(--curve-decelerate) both; }
+.ds-enter-scale  { animation: ds-scale-in var(--dur-fast) var(--curve-decelerate) both; }
+.ds-enter-right  { animation: ds-slide-in-right var(--dur-base) var(--curve-decelerate) both; }
+
+/* Staggered lists: set --i on each child. Capped so long lists stay fast. */
+.ds-stagger > * { animation: ds-rise var(--dur-base) var(--curve-decelerate) both; }
+.ds-stagger > *:nth-child(1) { animation-delay: 0ms; }
+.ds-stagger > *:nth-child(2) { animation-delay: 40ms; }
+.ds-stagger > *:nth-child(3) { animation-delay: 80ms; }
+.ds-stagger > *:nth-child(4) { animation-delay: 120ms; }
+.ds-stagger > *:nth-child(5) { animation-delay: 160ms; }
+.ds-stagger > *:nth-child(n+6) { animation-delay: 200ms; }
+
+/* Skeleton shimmer. */
+.ds-shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--surface-2) 25%,
+    var(--surface-3) 37%,
+    var(--surface-2) 63%
+  );
+  background-size: 200% 100%;
+  animation: ds-shimmer 1.6s linear infinite;
+}
+
+/* Interactive affordances. */
+.ds-press { transition: transform var(--dur-fast) var(--curve-standard); }
+.ds-press:active { transform: scale(0.98); }
+
+/* Page + shared-element transitions (View Transitions API). */
+@media (prefers-reduced-motion: no-preference) {
+  @view-transition { navigation: auto; }
+}
+::view-transition-old(root) { animation: ds-fade-in var(--dur-fast) var(--curve-accelerate) reverse; }
+::view-transition-new(root) { animation: ds-fade-in var(--dur-base) var(--curve-decelerate); }
+
+/* Overlay scrim + panel. */
+.ds-scrim       { background: var(--scrim); animation: ds-fade-in var(--dur-slow) var(--curve-decelerate) both; }
+.ds-panel-in    { animation: ds-scale-in var(--dur-slow) var(--curve-decelerate) both; }
+
+/* Global reduced-motion guard — required for accessibility. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+  ::view-transition-old(root),
+  ::view-transition-new(root) { animation: none; }
+}
