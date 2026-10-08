@@ -73,11 +73,17 @@ function probePage() {
   const tinyTargets = interactive.filter((el) => {
     const r = el.getBoundingClientRect();
     const style = getComputedStyle(el);
+    // Only count what a pointer can actually hit: skip display/visibility
+    // hidden, visually hidden (clip / clip-path, e.g. sr-only), zero-size, and
+    // inline links (WCAG 2.5.8 exempts links rendered inline in a sentence).
     if (
       style.display === "none" ||
       style.visibility === "hidden" ||
-      r.width === 0 ||
-      r.height === 0
+      style.display === "inline" ||
+      r.width <= 1 ||
+      r.height <= 1 ||
+      (style.clipPath && style.clipPath !== "none") ||
+      (style.clip && style.clip !== "auto")
     ) {
       return false;
     }
