@@ -25,11 +25,17 @@ hand — it is generated and will be overwritten.
 node skills/sites-design/scripts/compile-tokens.mjs
 ```
 
+The compiler also **asserts WCAG AA contrast** for the declared semantic pairs
+in both themes (alpha roles composite over the page background first). A
+failing pair exits non-zero — an illegal color combination dies at compile
+time, never on screen. The pair list lives in `$contrast.pairs` in
+`tokens.json`; fix the token source, never the rendered output.
+
 ## Token contract
 
 ### Color ramps (primitives)
 
-- `--n-0 … --n-1000` — neutral (paper → ink). Warm-neutral by default.
+- `--n-0 … --n-1000` — neutral (paper → ink). **Derived, not authored:** each step is tinted toward the brand hue at compile time in OKLCH (5% by default, configured in the `n` group's `$extensions.tint`), so recoloring `--b-*` re-tints every neutral without shifting its lightness. `--n-0`/`--n-1000` stay pure anchors.
 - `--b-50 … --b-950` — brand ramp. Recolor the product by changing this ramp.
 - `--success-500`, `--warning-500`, `--danger-500`, `--info-500` (+ `-subtle`).
 
@@ -95,7 +101,9 @@ verify contrast in both.
 1. **Palette** → rewrite `--b-50 … --b-950`. Keep relative lightness so
    `--on-brand` stays legible; recompute `--on-brand` to the ink or paper end
    by contrast test.
-2. **Neutrals** → if the brand is cool/warm, shift the `--n-*` ramp hue.
+2. **Neutrals** → automatic. They derive from the brand hue at compile time
+   (`$extensions.tint` on `n`; raise `$mix` for a stronger cast, remove the
+   block for pure neutrals).
 3. **Fonts** → set `--font-sans` / `--font-display`. Prefer self-hosted via
    Fontsource over a runtime CDN.
 4. **Logo** → place as an SVG; size by height, not width; never recolor beyond
@@ -111,7 +119,8 @@ Before showing the user anything, verify:
 - [ ] No raw hex/rgb/hsl and no arbitrary `px` for space/radius/type in the diff.
 - [ ] All colors resolve to a semantic role.
 - [ ] Focusable elements show a visible `--ring` focus state.
-- [ ] Body text meets WCAG 2.2 AA contrast in **both** themes.
+- [ ] Body text meets WCAG 2.2 AA contrast in **both** themes (the core pairs
+      are already enforced by the compiler).
 - [ ] Type sizes and spacing come from the scale (no in-between values).
 - [ ] Exactly one visual idea dominates the first viewport.
 
