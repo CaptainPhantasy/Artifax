@@ -1,5 +1,11 @@
 # Authentication
 
+Identity in a Sites site comes from request headers injected by the hosting
+layer, never from anything the site computes itself. This document describes
+the pattern generally and uses the OpenAI plug (see
+`connectors/openai/README.md`) as the reference implementation; copy the
+pattern for other plugs.
+
 ## Choosing Authentication
 
 Choose the authentication model that matches where the site will run.

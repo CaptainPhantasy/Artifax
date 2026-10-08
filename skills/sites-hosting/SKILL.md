@@ -1,81 +1,84 @@
 ---
 name: sites-hosting
-description: Host websites with Sites. Always use after `sites-building`, and use for website publishing, deployment, hosting management, or projects containing `.openai/hosting.json`.
+description: Host websites with Sites. Always use after `sites-building`, and use for website publishing, deployment, hosting management, or projects containing `.sites/hosting.json`.
 ---
 
 # Sites hosting
 
-Publish the exact validated source with the shortest safe sequence. Treat the
-Sites connector descriptions as the source of truth for arguments and archive
-requirements.
+Publish the exact validated source with the shortest safe sequence. Hosting
+is pluggable: every plug follows the same contract — package the built site,
+hand it to a target, deploy, and report one plain-language result. The
+active plug's own documentation is the source of truth for its arguments.
 
 ## Communicate clearly
 
 Assume the user is a nontechnical knowledge worker. Keep source control,
-credentials, IDs, commits, branches, archives, versions, packaging, connector
-calls, and deployment polling out of user-facing messages. Usually send one
-update when publishing begins, then the final URL or a plain-language blocker.
-For example: `Your site is ready. I’m publishing it privately now.`
+credentials, IDs, commits, branches, archives, versions, packaging,
+connector calls, and deployment polling out of user-facing messages. Usually
+send one update when publishing begins, then the final URL, path, or a
+plain-language blocker.
 
 ## Rules
 
 - Publish after a successful build unless the user requested local-only work.
-- Publishing does not require browser preview or visual QA. Use the preview from
-  `sites-building`; do more browser work only when the user asks. A failed
-  browser handoff does not block publishing.
-- Treat `public/screenshot.jpeg` as an optional deployment thumbnail. Preserve
-  an existing file. Create or refresh it only when the user explicitly requests
-  a Sites deployment thumbnail; a generic screenshot request does not count.
-  Missing or failed capture never blocks validation, version saving, or
-  deployment.
+- Publishing does not require a browser preview or visual QA. Use the
+  preview from `sites-building`; do more browser work only when the user
+  asks.
 - Store only `project_id` plus optional logical `d1` and `r2` bindings in
-  `.openai/hosting.json`. Manage runtime values through Sites.
+  `.sites/hosting.json`. Runtime values belong to the hosting plug, never to
+  this file.
+- Keep the workspace on a non-system data drive; never write builds,
+  archives, or caches to an operating-system drive.
 
-## Fast publish sequence
+## Default deliverable (no plug configured)
 
-1. Reuse the successful build from `sites-building` when the source has not
-   changed. Rebuild only when needed.
-2. Call `create_site` once for a new site. Persist its `project_id` in
-   `.openai/hosting.json` and reuse the source write credential returned by that
-   call. Reuse these values instead of rediscovering them. Retry only when the
-   error explicitly identifies a temporary failure or slug conflict. Treat
-   quota, permission, and access errors as terminal; do not change the slug
-   speculatively.
-3. Commit the exact validated source. Push it with the returned credential as a
-   per-command HTTP authorization header. Keep the credential out of remote
-   URLs and Git configuration. Use the pushed branch-head SHA as `commit_sha`.
-4. Package with this plugin's root-level `scripts/package-site.sh` helper,
-   passing the project directory and archive path. It stages `dist/`, hosting
-   metadata, and migrations; validates required files; and creates the archive.
-5. Save one version with the connector using that `commit_sha` and archive.
-6. Prefer private deployment. Use `deploy_private_site_version` when available.
-   If only shared or public deployment is available, call `request_user_input` with an approval choice that names the resolved access level, such as `Publish publicly` or `Publish to existing shared access`, plus `Not now`; wait for the response, and call `deploy_site_version` only after approval.
-7. Poll `get_deployment_status` directly until deployment succeeds or fails.
-   Use discovery calls only when an error requires them.
+- Serve the validated build on the target machine and return its local URL.
+- Package the exact artifact for handoff at any time:
+  `scripts/package-site.sh PROJECT_DIR ARCHIVE`. It stages `dist/`,
+  `.sites/hosting.json`, and migrations; validates required files; and
+  creates the archive. It requires `dist/server/index.js`, so run
+  `npm run build` first.
+
+## Plug contract
+
+A hosting plug, whatever its target, must:
+
+1. Take the packaged archive (or the workspace) unchanged.
+2. Register the site once and persist a stable `project_id` in
+   `.sites/hosting.json`; reuse it instead of rediscovering it.
+3. Deploy a version tied to the exact validated source.
+4. Report success as one resolvable URL, or failure as one plain-language
+   reason and next step.
+5. Prefer private access. Shared or public access requires the user's
+   explicit approval, captured before deployment.
+
+Retry only on errors that explicitly identify a temporary failure or a
+naming conflict. Treat quota, permission, and access errors as terminal; do
+not change names or targets speculatively.
+
+## OpenAI Sites plug
+
+`connectors/openai/` preserves the first plug as received: register the
+site, push the source using the plug's credential as a per-command header,
+package, save a version tied to the pushed source, deploy (private first),
+and poll status. Its README carries the full sequence.
 
 ## Existing sites and advanced capabilities
 
-- Reuse an existing `project_id` and valid source credential when available.
-- If a credential is absent or expired, obtain one with
-  `create_source_repository_write_credential` and reuse it until expiry.
-- If the D1 schema changed, ensure generated migrations are present before
+- Reuse the existing `project_id` and valid credentials recorded for the
+  active plug.
+- If a D1 schema changed, ensure generated migrations are present before
   packaging.
 - Require `dist/server/index.js`, static assets when emitted,
-  `dist/.openai/hosting.json`, and `dist/.openai/drizzle/**` when migrations
+  `dist/.sites/hosting.json`, and `dist/.sites/drizzle/**` when migrations
   exist.
-- For non-vinext projects, use the established Cloudflare Workers-compatible
-  build output and adapt staging only as required by the connector contract.
+- For non-vinext projects, use the established Cloudflare
+  Workers-compatible build output and adapt staging only as required by the
+  plug contract.
 
 ## Handoff
 
-After `get_deployment_status` reports `status: "succeeded"`, call
-`open_in_codex` without `threadId` so it defaults to the calling thread. Use
-the exact deployed URL returned in that response:
-`target: { type: "browser", url: deployedUrl }`.
-
-Then return the deployed Sites URL and a concise description of what the user
-can do. If the deployment is unsuccessful, do not call `open_in_codex` or
-mention that the deployed URL could not be opened in the in-app browser;
-explain the user-visible reason and next step. Keep source credentials and
-temporary archives private. Do not include file paths, commands, build details,
-IDs, commits, or version information unless the user asks.
+When the active plug reports success, return the deployed URL. With no plug,
+return the local URL and the workspace path. Keep source credentials and
+temporary archives private. On failure, do not soften it into a partial
+success: give the user-visible reason and the next step.

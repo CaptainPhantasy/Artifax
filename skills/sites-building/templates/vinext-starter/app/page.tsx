@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   description:
     "Your first version will appear here automatically when it’s ready.",
   other: {
-    "codex-preview": "development",
+    "sites-preview": "development",
   },
 };
 

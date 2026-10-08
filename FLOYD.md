@@ -1,69 +1,73 @@
 # FLOYD.md — Project Context
 
-OpenAI **Sites** Codex plugin payload: plugin manifest, skills (instructions), helper scripts, and the `vinext-starter` site template. This directory is a slice of the `openai/openai` monorepo — there is **no root `package.json`**; the repo root is not a buildable project. Build/test commands apply to *generated sites* created from the starter template.
+**Sites** — an open (MIT), agent-agnostic website building and hosting platform. Rebuilt from a proprietary plugin payload (OpenAI's Codex "Sites" plugin) as received; the engine underneath was always open source (vinext, Vite, Drizzle ORM, Tailwind CSS, wrangler). The original payload as received is preserved in git history (baseline commit `f3e6bfe`); OpenAI service glue lives only under `connectors/openai/`.
+
+The repo root is not a buildable project — it is a payload: manifest, skill instructions, helper scripts, and a site starter template. Build/test commands apply to generated sites created from the starter.
 
 ## Commands
 
-Repo root (payload tooling, bash, no install step):
+Platform tooling (bash, no install step):
 
 ```bash
-scripts/init-site.sh TARGET_DIR              # scaffold vinext-starter into an EMPTY dir; refuses non-empty targets (exit 2)
-scripts/package-site.sh PROJECT_DIR ARCHIVE  # validate + stage dist/, .openai/hosting.json, drizzle/ → .tar.gz
+scripts/init-site.sh TARGET_DIR   # scaffold starter into EMPTY dir; refuses non-empty (exit 2)
+scripts/package-site.sh PROJECT_DIR ARCHIVE  # validate + stage dist/, .sites/hosting.json, drizzle/ → .tar.gz
 ```
 
-Both root scripts are thin shims that `exec` into `skills/sites-building/scripts/init-site.sh` and `skills/sites-hosting/scripts/package-site.sh`. Edit the `skills/` copies, not the shims.
+- Root scripts are shims that exec into `skills/*/scripts/` — edit the `skills/` copies.
+- `init-site.sh` target defaults to `$SITES_WORKSPACE`, then `$PWD`. Install is lockfile-aware: `npm ci` when `package-lock.json` exists, else `npm install` (both with `--ignore-scripts`).
+- Workspaces belong on a **non-system data drive** (never the OS drive). `SITES_WORKSPACE` makes remote agents behave like local ones.
 
-Inside a generated site (from `skills/sites-building/templates/vinext-starter/`, Node >= 22.13.0, npm):
+Inside a generated site (Node >= 22.13, npm):
 
 ```bash
-npm run dev          # vinext dev (Vite + Cloudflare Workers, wrangler logs to .wrangler/)
+npm run dev          # vinext dev (Vite + Cloudflare Workers; wrangler logs to .wrangler/)
 npm run build        # vinext build → dist/ (worker at dist/server/index.js)
 npm run start        # serve built output
-npm test             # runs `npm run build` first, then node --test tests/rendered-html.test.mjs
+npm test             # npm run build first, then node --test tests/rendered-html.test.mjs
 npm run lint         # eslint . --ignore-pattern dist --ignore-pattern .next
-npm run db:generate  # drizzle-kit generate (D1 migrations → drizzle/)
+npm run db:generate  # drizzle-kit generate → drizzle/
 ```
 
-Deployment is done through Sites MCP connector calls (`create_site` → git push with per-command credential header → `package-site.sh` → save version → deploy → poll `get_deployment_status`), not a CLI in this repo. See `skills/sites-hosting/SKILL.md`.
+Publishing is pluggable (see Hosting in `README.md`). Default deliverable: validated build served locally on the target machine. `connectors/openai/` preserves the first plug as received.
 
 ## Structure
 
-- `.codex-plugin/plugin.json` — plugin manifest (name `sites`, version, interface metadata; points at `./skills/`, `./.app.json`, `./assets/`)
-- `.app.json` — Sites connector app ID
-- `skills/sites-building/` — build skill: `SKILL.md` (runtime instructions), `scripts/init-site.sh`, `references/` (`authentication.md`, `persistence-and-storage.md`), `templates/vinext-starter/`
-- `skills/sites-hosting/` — hosting skill: `SKILL.md` (publish flow), `scripts/package-site.sh`
-- `assets/` — `logo.svg`, `icon.svg` (referenced from plugin.json)
-- `AGENTS.md` — dual-write mirror rule (see Gotchas)
-- `TEMPEST.md` — risk/review policy: changes to skills, prompts, manifests, tool descriptions, or user-visible text always require human review
-- `OWNERS` — `[block, review] / @openai/codex-cloud`
+- `plugin.json` — manifest (name `sites`, points at `./skills/`)
+- `skills/sites-building/` — `SKILL.md`, `scripts/init-site.sh`, `references/` (authentication, persistence-and-storage), `templates/vinext-starter/`
+- `skills/sites-hosting/` — `SKILL.md` (plug contract + hand-off), `scripts/package-site.sh`
+- `connectors/openai/` — OpenAI Sites plug as received (manifest, app id, README with call sequence)
+- `assets/` — logo.svg, icon.svg
+- `README.md`, `LICENSE` (MIT)
 
-`vinext-starter` stack: Next.js-style `app/` dir on **vinext** (Vite + Cloudflare Workers ESM), React 19, Tailwind CSS 4, Drizzle ORM + Cloudflare D1, wrangler 4, TypeScript, ESLint 9 flat config.
+Starter stack: Next.js-style `app/` dir on **vinext** (Vite + Cloudflare Workers ESM), React 19, Tailwind 4, Drizzle + D1, wrangler 4, TypeScript, ESLint 9 flat config.
 
 ## Conventions
 
-- Skills are markdown files with YAML front matter (`name`, `description`); descriptions state trigger conditions ("Always use when the project contains `.openai/hosting.json`").
-- Skill prose is written for a nontechnical end user: keep commands, paths, IDs, and internals out of user-facing text.
-- D1/R2 bindings are *logical* names in `.openai/hosting.json` (`{"d1": null, "r2": null}` when unused — leave `null`, never add speculatively); `vite.config.ts` simulates them locally via the Cloudflare Vite plugin; Sites owns real resources.
-- D1 access goes through the `getDb()` helper in `db/index.ts` (drizzle over `env.DB` via `cloudflare:workers`); schema lives in `db/schema.ts`, migrations in `drizzle/`.
-- Worker entry is `worker/index.ts`; it adds the `/_vinext/image` optimization endpoint before delegating to vinext's app-router handler.
-- The `sites()` Vite plugin (`build/sites-vite-plugin.ts`) runs on build (`apply: "build"`) and copies `.openai/hosting.json` + `drizzle/` into `dist/.openai/`.
-- Shell scripts use `set -euo pipefail`, validate inputs, and exit non-zero with stderr messages on missing files.
+- Skills are markdown with YAML front matter (`name`, `description`); descriptions state trigger conditions ("Always use when the project contains `.sites/hosting.json`").
+- Skill prose targets a nontechnical end user: no commands, paths, IDs, or internals in user-facing text.
+- **`.sites/hosting.json`** (renamed from `.openai/hosting.json`) holds only `project_id` plus optional logical `d1`/`r2` bindings (`null` when unused — never add speculatively). `vite.config.ts` simulates bindings locally; a hosting plug owns real resources.
+- **`sites-preview`** metadata marker (renamed from `codex-preview`) marks the temporary starter skeleton page.
+- D1 access via `getDb()` in `db/index.ts`; schema in `db/schema.ts`; migrations in `drizzle/`. One statement per `prepare()`; use `batch([...])` for multiples; never `env.DB.exec()` for multiline SQL.
+- The `sites()` Vite plugin (`build/sites-vite-plugin.ts`) copies `.sites/hosting.json` + `drizzle/` into `dist/.sites/` on build.
+- Hosting plugs follow a fixed contract (register → persist `project_id` → deploy exact source → one plain result; private first, shared/public requires explicit approval). Identity is plug-injected headers; `app/chatgpt-auth.ts` implements the OpenAI plug's headers as the reference pattern.
+- Shell scripts: `set -euo pipefail`, validate inputs, exit non-zero with stderr messages.
 
 ## Testing
 
-- Template tests use **`node --test`** (Node's built-in runner) with `node:assert/strict` — no Jest/Vitest.
-- `tests/rendered-html.test.mjs` imports the built worker (`dist/server/index.js`) and calls `worker.fetch()` with stubbed env, so `npm test` always builds first.
-- Tests double as template-contract tests: they assert exact starter skeleton copy, `react-loading-skeleton` colors/duration, `codex-preview` metadata, and that `app/_sites-preview/` contains exactly `SkeletonPreview.tsx` + `preview.css`. Changing starter cosmetics requires updating these assertions.
+- **`node --test`** (Node built-in runner) with `node:assert/strict` — no Jest/Vitest.
+- `tests/rendered-html.test.mjs` imports the built worker (`dist/server/index.js`), calls `worker.fetch()` with a stubbed env; `npm test` always builds first.
+- Tests double as template-contract tests: they assert the starter skeleton copy, `react-loading-skeleton` values, the `sites-preview` marker, and that `app/_sites-preview/` contains exactly `SkeletonPreview.tsx` + `preview.css`. Changing starter cosmetics means updating these assertions.
+- The test also guards against brand leakage: `assert.doesNotMatch(html, /codex/i)`.
 
 ## Gotchas
 
-- **Dual-write mirror (AGENTS.md)**: this payload is mirrored to a second location (`plugins/sites` ↔ `plugins/sites-codex`). Any shared change (skill, script, template, asset, version) must update both mirrors in the same PR, byte-identical except the manifest name (`sites` vs `sites-codex`). Mirroring does not authorize publishing a release.
-- **Human review (TEMPEST.md)**: nearly everything user-visible here — skill text, plugin manifest, tool descriptions — is review-gated. Only comments/tests/docs and additive diagnostics are low-risk.
+- **Git history is lineage.** Baseline commit `f3e6bfe` preserves the payload exactly as received (including the retired OpenAI governance files AGENTS.md, TEMPEST.md, OWNERS). Do not rewrite history; the README's lineage note depends on it.
+- **Deliberate brand mentions** live in exactly three working places: root `README.md` (lineage), `connectors/openai/` (the plug), and the test's negative assertion. Don't scrub those; don't add new ones elsewhere.
 - `init-site.sh` hard-fails (exit 2) on non-empty targets; only `.git`, `.DS_Store`, `work/`, `outputs/` are tolerated.
-- `package-site.sh` requires `dist/server/index.js` and `.openai/hosting.json` to exist, and verifies the archive contents; run `npm run build` first.
-- Wrangler/Miniflare state is pinned project-local (`.wrangler/`) via env vars set in `vite.config.ts`; app secrets belong in ignored `.env*` files, never in `hosting.json`.
-- On macOS Seatbelt sandboxes (`CODEX_SANDBOX=seatbelt`), FSEvents is blocked — `vite.config.ts` already switches HMR to polling; don't remove that.
-- Reserved auth paths (`/signin-with-chatgpt`, `/signout-with-chatgpt`, `/callback`) are owned by the hosting dispatch layer — never implement routes for them. SIWC (Sign in with ChatGPT) proves identity only, not workspace membership; protected pages need `export const dynamic = "force-dynamic"`.
-- D1 prepared statements take exactly one SQL statement per `prepare()`; use `batch([...])` for multiple. `env.DB.exec()` splits on newlines — do not use it for multiline `CREATE TABLE`.
-- Starter is temporary infrastructure: after the first real implementation, `app/_sites-preview`, `react-loading-skeleton`, and the `codex-preview` metadata marker must be removed (and lockfile refreshed) — but the template tests assert they exist, so only remove them in generated sites, not in the template itself.
-- Starter pins exact dependency versions (no `^`) and uses npm + `package-lock.json`; preserve the package manager and lockfile in generated sites.
+- `package-site.sh` requires `dist/server/index.js` and `.sites/hosting.json`, then verifies archive contents; run `npm run build` first.
+- The template as received had **no lockfile**; `init-site.sh` falls back to `npm install`. If a lockfile exists in the template, keep it committed so `npm ci` stays reproducible.
+- HMR polling: `SITES_HMR_POLLING=1` opts in; the legacy `CODEX_SANDBOX=seatbelt` trigger still works (kept for compatibility).
+- Wrangler/Miniflare state is pinned project-local (`.wrangler/`) via env vars in `vite.config.ts`; app secrets belong in ignored `.env*` files, never in `hosting.json`.
+- Reserved auth paths (`/signin-with-chatgpt`, `/signout-with-chatgpt`, `/callback`) are owned by the plug's dispatch layer — never implement routes for them. Sign-in proves identity, not membership; protected pages need `export const dynamic = "force-dynamic"`.
+- Starter is temporary infrastructure: after the first real implementation, remove `app/_sites-preview`, `react-loading-skeleton`, and the `sites-preview` marker in **generated sites** — never in the template itself (the template tests assert they exist).
+- Starter pins exact dependency versions and uses npm; preserve the package manager and lockfile in generated sites.

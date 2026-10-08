@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-target="${1:-$PWD}"
+target="${1:-${SITES_WORKSPACE:-$PWD}}"
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 starter="$(cd "$script_dir/../templates/vinext-starter" && pwd)"
 
@@ -18,4 +18,8 @@ cd "$target"
 if [[ ! -d .git ]]; then
   git init -b main >/dev/null
 fi
-npm ci --ignore-scripts --prefer-offline --no-audit --no-fund
+if [[ -f package-lock.json ]]; then
+  npm ci --ignore-scripts --prefer-offline --no-audit --no-fund
+else
+  npm install --ignore-scripts --prefer-offline --no-audit --no-fund
+fi

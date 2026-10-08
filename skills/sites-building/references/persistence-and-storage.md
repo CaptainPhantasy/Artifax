@@ -37,7 +37,7 @@ storage over browser-only storage.
 
 Use this flow after choosing the storage shape the product needs.
 
-1. Set the needed logical bindings in `.openai/hosting.json`:
+1. Set the needed logical bindings in `.sites/hosting.json`:
    - use `d1`, usually `DB`, when D1 is required.
    - use `r2` when R2 is required.
    - leave unused bindings `null`.
