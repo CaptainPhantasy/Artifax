@@ -60,6 +60,14 @@ function stripCommentsAndStrings(src) {
     .replace(/'(?:\\.|[^'])*'/g, "''");
 }
 
+function stripComments(src) {
+  // Blank comments but keep string literals: class names live in strings and
+  // must remain inspectable by the palette check.
+  return src
+    .replace(/\/\*[\s\S]*?\*\//g, " ")
+    .replace(/(^|[^:])\/\/[^\n]*/g, "$1 ");
+}
+
 // ---------- static checks ----------
 const files = await walk(projectDir);
 const rel = (f) => f.replace(projectDir + "/", "");
@@ -75,6 +83,19 @@ for (const file of files) {
     if (hex) record("advisory", "raw-color", rel(file), `${hex.length} hex literal(s): ${[...new Set(hex)].slice(0, 4).join(", ")}`);
     const fn = code.match(/\b(rgb|hsl)a?\(/g);
     if (fn) record("advisory", "raw-color", rel(file), `${fn.length} rgb()/hsl() literal(s)`);
+  }
+
+  // default-palette utilities bypass the token system (bg-gray-100, text-slate-500, …)
+  const paletteHits = stripComments(src).match(
+    /\b(?:bg|text|border|ring|divide|outline|from|via|to|fill|stroke|accent|caret|decoration|placeholder|shadow)-(?:slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)-\d{2,3}\b/g,
+  );
+  if (paletteHits) {
+    record(
+      "blocking",
+      "raw-palette",
+      rel(file),
+      `${paletteHits.length} default-palette class(es): ${[...new Set(paletteHits)].slice(0, 4).join(", ")}`,
+    );
   }
 
   // images without alt

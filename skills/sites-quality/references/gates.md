@@ -10,6 +10,7 @@ Run against `<project>/app`, `<project>/components`, `<project>/styles`,
 | Check | Rule | Fix |
 | --- | --- | --- |
 | **Raw colors** | No `#hex`, `rgb(`, `hsl(` outside the token file | Re-express as a token/role; add a token if missing |
+| **Raw palette** | No Tailwind default-palette utilities (`bg-gray-100`, `text-slate-500`, …) — **blocking** | Use a semantic role (`bg-surface`, `text-ink-2`) or add a token |
 | **Image alt** | Every `<img>`/`<Image>` has `alt` (empty `alt=""` allowed only for decorative) | Add meaningful alt or `alt=""` |
 | **Focus removal** | No `outline: none`/`outline-none` without a `:focus-visible` replacement | Add a `--ring` focus style |
 | **Accessible name** | Icon-only `<button>` has text or `aria-label` | Add `aria-label` |

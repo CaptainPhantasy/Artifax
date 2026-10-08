@@ -57,6 +57,20 @@ time, never on screen. The pair list lives in `$contrast.pairs` in
 Rule: **code uses semantic roles; ramps are for defining roles.** If a site
 reaches for `--n-700` directly in a component, add a role instead.
 
+### Banned in site code
+
+The quality gate rejects these (`raw-palette` is blocking):
+
+- **No default-palette utilities.** No `bg-gray-100`, `text-slate-500`,
+  `border-zinc-200`, `from-indigo-500`, … These are the generic look the system
+  exists to prevent. Use a semantic role (`bg-surface`, `text-ink-2`,
+  `border-line`) or add a token.
+- **No raw colors** — `#hex`, `rgb()`, `hsl()` — outside the token files.
+- **No arbitrary values** — `p-[13px]`, `rounded-[7px]`, `text-[15px]` — when
+  the scale already has a value.
+
+When the value you need is missing, add it to the token system. Never inline it.
+
 ### Space
 
 `--sp-1: 4px` → `--sp-24: 96px`, geometric-ish (1,2,3,4,6,8,12,16,20,24).
@@ -117,6 +131,7 @@ verify contrast in both.
 Before showing the user anything, verify:
 
 - [ ] No raw hex/rgb/hsl and no arbitrary `px` for space/radius/type in the diff.
+- [ ] No default-palette utilities (`bg-gray-*`, `text-slate-*`, `border-zinc-*`, …).
 - [ ] All colors resolve to a semantic role.
 - [ ] Focusable elements show a visible `--ring` focus state.
 - [ ] Body text meets WCAG 2.2 AA contrast in **both** themes (the core pairs
