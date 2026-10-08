@@ -13,7 +13,22 @@ if find "$target" -mindepth 1 -maxdepth 1 \
   exit 2
 fi
 
-cp -R "$starter"/. "$target"/
+# Copy the starter, skipping anything a local build may have left behind
+# (node_modules, dist, wrangler/vinext caches, stray OS files). The template is
+# built in place by the test suite, so without this a freshly scaffolded site
+# would inherit hundreds of MB of stale dependencies and build output.
+for entry in "$starter"/.[!.]* "$starter"/*; do
+  [[ -e "$entry" ]] || continue
+  case "${entry##*/}" in
+    node_modules|dist|.next|.vinext|.wrangler|coverage|outputs|work|.DS_Store) continue ;;
+  esac
+  cp -R "$entry" "$target"/
+done
+
+# Generated verification artifacts live under .sites/; keep only the tracked
+# hosting contract so a new site does not inherit another site's report.
+rm -f "$target/.sites/quality.json"
+rm -rf "$target/.sites/critique"
 
 # Refresh the design-token layer from its source of truth so generated sites
 # inherit the latest system even if the starter copy is stale.

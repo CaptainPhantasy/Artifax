@@ -11,7 +11,7 @@
 // Exit code: 0 when passing or advisory-only; 1 when a BLOCKING check fails AND
 // QUALITY_GATE=1 is set. Without QUALITY_GATE=1 it never fails the process.
 
-import { readFile, writeFile, mkdir, readdir, stat } from "node:fs/promises";
+import { readFile, writeFile, mkdir, readdir } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { resolve, join, extname } from "node:path";
@@ -20,7 +20,19 @@ const projectDir = resolve(process.argv[2] ?? process.cwd());
 const auditUrl = process.env.SITES_AUDIT_URL || "";
 const enforcing = process.env.QUALITY_GATE === "1";
 
-const SKIP_DIRS = new Set(["node_modules", "dist", ".git", ".sites", ".wrangler", ".vinext", "drizzle"]);
+const SKIP_DIRS = new Set([
+  "node_modules",
+  "dist",
+  ".git",
+  ".sites",
+  ".next",
+  ".vinext",
+  ".wrangler",
+  "drizzle",
+  "coverage",
+  "outputs",
+  "work",
+]);
 const CODE_EXT = new Set([".ts", ".tsx", ".js", ".jsx", ".mjs", ".css", ".html", ".mdx"]);
 const TOKEN_FILES = [/tokens\.css$/, /preview\.css$/];
 
@@ -35,12 +47,9 @@ async function walk(dir, acc = []) {
     return acc;
   }
   for (const e of entries) {
-    if (e.name.startsWith(".") && e.name !== ".sites") {
-      if (SKIP_DIRS.has(e.name) || e.name === ".git") continue;
-    }
+    if (SKIP_DIRS.has(e.name) || e.name === ".git") continue;
     const p = join(dir, e.name);
     if (e.isDirectory()) {
-      if (SKIP_DIRS.has(e.name)) continue;
       await walk(p, acc);
     } else if (CODE_EXT.has(extname(e.name))) {
       acc.push(p);
