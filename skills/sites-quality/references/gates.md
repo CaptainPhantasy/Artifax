@@ -21,6 +21,16 @@ Run against `<project>/app`, `<project>/components`, `<project>/styles`,
 
 These catch the most common regressions cheaply, before any browser runs.
 
+## Lint (optional, tool-detected)
+
+```bash
+scripts/lint.sh .            # or: node skills/sites-quality/scripts/lint.mjs .
+```
+
+Uses the project's local `oxlint` (oxc) if installed, else local `eslint`, else
+fetches `oxlint` via `npx`. Reports and exits 0 unless `QUALITY_GATE=1`, when a
+lint problem fails the build. oxlint is preferred for speed; either is fine.
+
 ## Live audits (opt-in)
 
 Requires a running server and network access to fetch the tools.
@@ -66,7 +76,9 @@ Links: https://github.com/GoogleChrome/lighthouse · https://github.com/dequelab
 
 ## Wiring into packaging
 
-`package-site.sh` invokes the gate when `QUALITY_GATE=1`. Recommended CI use:
+`package-site.sh` invokes the gate on the deploy path when `QUALITY_GATE=1`, and
+exports a clean, git-ready source tree with `--git-ready DIR` (tracked source
+only, a `.gitignore`, and an initial commit). Recommended CI use:
 
 ```bash
 # start the site, then gate, then package
@@ -74,6 +86,10 @@ npm run build && npm run start & SRV=$!
 sleep 2
 QUALITY_GATE=1 SITES_AUDIT_URL=http://localhost:3000 scripts/package-site.sh . out.tar.gz
 kill $SRV
+
+# lint + a pushable source export
+scripts/lint.sh .
+scripts/package-site.sh . --git-ready ./exported-site
 ```
 
 ## Interpreting results honestly
