@@ -12,9 +12,9 @@
 // QUALITY_GATE=1 is set. Without QUALITY_GATE=1 it never fails the process.
 
 import { readFile, writeFile, mkdir, readdir } from "node:fs/promises";
-import { existsSync } from "node:fs";
+import { existsSync, statSync } from "node:fs";
 import { execFileSync } from "node:child_process";
-import { resolve, join, extname } from "node:path";
+import { resolve, join, extname, dirname } from "node:path";
 
 const projectDir = resolve(process.argv[2] ?? process.cwd());
 const auditUrl = process.env.SITES_AUDIT_URL || "";
@@ -131,15 +131,52 @@ for (const file of files) {
   if (ph) record("advisory", "placeholder-text", rel(file), [...new Set(ph.map((s) => s.toLowerCase()))].join(", "));
 }
 
-// exactly one h1 across rendered app pages, and html lang
+// Follow relative imports from a file to capture the component tree a route
+// actually renders. Bare/aliased imports (react, @/…) are not resolved — the
+// route's own heading markup virtually always lives in its relative tree.
+const RESOLVE_EXT = ["", ".tsx", ".ts", ".jsx", ".js", "/index.tsx", "/index.ts"];
+async function reachable(file, seen = new Set()) {
+  const abs = resolve(file);
+  if (seen.has(abs)) return seen;
+  seen.add(abs);
+  let src;
+  try {
+    src = await readFile(abs, "utf8");
+  } catch {
+    return seen;
+  }
+  const specs = [
+    ...src.matchAll(/\bfrom\s+["']([^"']+)["']/g),
+    ...src.matchAll(/\bimport\s+["']([^"']+)["']/g),
+  ]
+    .map((m) => m[1])
+    .filter((s) => s.startsWith("."));
+  for (const spec of specs) {
+    const base = resolve(dirname(abs), spec);
+    for (const ext of RESOLVE_EXT) {
+      const cand = base + ext;
+      if (existsSync(cand) && statSync(cand).isFile()) {
+        await reachable(cand, seen);
+        break;
+      }
+    }
+  }
+  return seen;
+}
+
+// exactly one h1 across the files a route renders, and html lang
 const appDir = join(projectDir, "app");
 if (existsSync(appDir)) {
   const pageFiles = (await walk(appDir)).filter((f) => /page\.(tsx|jsx)$/.test(f));
   for (const p of pageFiles) {
-    const src = await readFile(p, "utf8");
-    const h1 = (src.match(/<h1\b/g) ?? []).length;
-    if (h1 === 0) record("advisory", "heading-h1", rel(p), "no <h1> on page");
-    if (h1 > 1) record("advisory", "heading-h1", rel(p), `${h1} <h1> elements on page`);
+    const tree = await reachable(p);
+    let h1 = 0;
+    for (const f of tree) {
+      const src = await readFile(f, "utf8").catch(() => "");
+      h1 += (src.match(/<h1\b/g) ?? []).length;
+    }
+    if (h1 === 0) record("advisory", "heading-h1", rel(p), "no <h1> reachable from this route");
+    if (h1 > 1) record("advisory", "heading-h1", rel(p), `${h1} <h1> elements reachable from this route`);
   }
 }
 const layout = [join(appDir, "layout.tsx"), join(appDir, "layout.jsx")].find(existsSync);
