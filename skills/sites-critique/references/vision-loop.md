@@ -15,10 +15,28 @@ Produces, in `<project-dir>/.sites/critique/`:
 - `desktop-light.png`, `desktop-dark.png`
 - `mobile-light.png`, `mobile-dark.png`
 - `full-page.png` (desktop, full height)
+- `faults.json` — a **machine-readable fault card**
 
 (Requires the project to have Playwright installed. If it is not, the script
 prints the one-line install command. An in-app browser tool is an acceptable
 substitute — open the URL, resize, toggle theme, screenshot.)
+
+### The fault card
+
+`faults.json` is objective, per viewport and theme: horizontal overflow,
+broken images, tap targets under 24px, an empty main, missing `lang`/`title`,
+and console errors. It is **data, not a fix** — the script never edits source,
+because the fixes are design decisions. Read it first: it is the checklist of
+things that are unambiguously wrong *before* you apply taste. Structure:
+
+```json
+{ "url": "…", "summary": { "error": 2, "warning": 3 },
+  "faults": [ { "id": "horizontal-overflow", "severity": "error",
+    "viewport": "mobile", "theme": "light", "message": "…" } ] }
+```
+
+Fix every `error` and `warning` fault before moving to the vision pass; leave
+`info` to judgment.
 
 ## The critique prompt (answer it literally, in writing)
 
@@ -47,7 +65,10 @@ it only work at one size/theme?
 
 ## Turning critique into patches
 
-- Take the **top three** ranked defects. Ignore the rest for this pass.
+- Start from `faults.json`: clear every `error` and `warning` fault first —
+  those are objective, not taste.
+- Then take the **top three** ranked defects from the written critique. Ignore
+  the rest for this pass.
 - For each, name the rubric criterion it maps to (e.g. B2 spacing, A2 CTA).
 - Make the fix. Re-render. Look again.
 - Stop when no defect is above "minor", or at 3 passes.
