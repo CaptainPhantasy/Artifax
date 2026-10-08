@@ -50,3 +50,30 @@ unknown, and resolving it collapses several others at once.
 `Risk` predictions are checkable. When a user says "that's not what I meant,"
 note which field you mis-scored and why. That note is how the platform gets
 better over time; write it to `.sites/intake.md` under `## Retro`.
+
+## Archetype classifier
+
+Before scoring, classify the request into one archetype. The archetype sets the
+design floor and tells you which references to load — the fastest way to stop a
+generic build. Match the **primary verb** in the request (show / sell / learn /
+do). When two fit, choose the one that governs the home page.
+
+| Signals in the spec | Archetype | Design lead | Load |
+| --- | --- | --- | --- |
+| portfolio, artist, photographer, "show my work", gallery | **Portfolio** | large imagery, gallery grid, minimal chrome, strong display type | design-system.md, patterns-library.md |
+| product page, campaign, landing, "learn more", "get started" | **Brochure** | hero + benefit stack, one clear CTA, social proof | design-system.md, component-catalog.md |
+| buy, price, cart, checkout, SKUs, shipping | **Commerce** | product grid, cart/checkout flow, trust marks | component-catalog.md, patterns-library.md |
+| dashboard, login, account, metrics, admin, "manage" | **App** | app shell, persistent nav, dense cards/tables | component-catalog.md, motion.md |
+| blog, articles, news, posts, "read" | **Content** | reading measure, typographic rhythm, index + detail | design-system.md, craft references |
+| event, schedule, agenda, RSVP, dates, lineup | **Event** | date/venue prominence, schedule, map, RSVP | patterns-library.md, motion.md |
+| booking, reservation, appointment, availability | **Booking** | calendar/slot picker, confirmation, reminders | component-catalog.md, patterns-library.md |
+| directory, listings, search, filters, "browse" | **Directory** | search + filters first, result cards, optional map | component-catalog.md, patterns-library.md |
+| class, course, curriculum, students, teaching, residency | **Education** | outcomes, syllabus, cadence, enrollment CTA | design-system.md, patterns-library.md |
+
+### Hint table
+
+The leads above are floors, not ceilings. Pick **one** signature moment — a
+hero interaction, a transition, a data view — and let the rest stay quiet;
+see `skills/sites-craft/` for motion primitives and `skills/sites-critique/`
+for the bar the result will be judged against. Record the chosen archetype and
+your confidence in `.sites/intake.md`.

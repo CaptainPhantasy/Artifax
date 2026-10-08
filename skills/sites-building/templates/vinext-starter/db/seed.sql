@@ -1,0 +1,13 @@
+-- Seed data for this site's database. Idempotent — safe to re-run.
+--
+-- This file is the single place seed rows are defined. Apply it with:
+--   npm run db:seed
+--
+-- Add tables to db/schema.ts first, then `npm run db:generate`. Keep every
+-- statement idempotent (INSERT OR IGNORE / ON CONFLICT DO NOTHING) so running
+-- the seed twice never duplicates a row. Seed data is for local development
+-- and demos, not production content.
+--
+-- Example:
+-- INSERT OR IGNORE INTO notes (id, title, content) VALUES
+--   (1, 'Welcome', 'This row was seeded locally.');
